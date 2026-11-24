@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="background-color" content="#f8fafc" />
+  <meta name="description" content="Cadenza — Disponibilités et agenda centralisé pour ensembles de musique." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Cadenza" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Cadenza</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Cpath d='M12 64 C12 31, 88 31, 88 64 C84 39, 16 39, 12 64 Z' fill='%23111827'/%3E%3Ccircle cx='50' cy='57' r='6.5' fill='%23111827'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- Génération de l'icône Apple Touch 180x180 -->
+  <script>
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 180;
+      const ctx = c.getContext("2d"), s = 1.8;
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 180, 180);
+      ctx.fillStyle = "#111827";
+      ctx.beginPath(); ctx.moveTo(12 * s, 64 * s);
+      ctx.bezierCurveTo(12 * s, 31 * s, 88 * s, 31 * s, 88 * s, 64 * s);
+      ctx.bezierCurveTo(84 * s, 39 * s, 16 * s, 39 * s, 12 * s, 64 * s);
+      ctx.fill();
+      ctx.beginPath(); ctx.arc(50 * s, 57 * s, 6.5 * s, 0, Math.PI * 2); ctx.fill();
+      const l = document.createElement("link");
+      l.rel = "apple-touch-icon"; l.href = c.toDataURL("image/png");
+      document.head.appendChild(l);
+    } catch (_) {}
+  </script>
+</head>
+<body>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- En-tête -->
+  <header id="app-header" class="hidden">
+    <div class="header-inner">
+      <div class="brand">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M12 64 C12 31, 88 31, 88 64 C84 39, 16 39, 12 64 Z" fill="#111827"/>
+          <circle cx="50" cy="57" r="6.5" fill="#111827"/>
+        </svg>
+        <div class="brand-titles">
+          <h1 class="brand-name">Cadenza</h1>
+          <div id="header-ensemble-name" class="ensemble-subtitle">Synchronisation...</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="btn-invite-top" class="btn-secondary btn-sm">Inviter</button>
+        <button type="button" id="btn-notif-top" class="icon-btn" aria-label="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="notif-status-dot" class="notif-dot off"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="firebase-error-banner" class="alert-box hidden" role="alert">
+      <strong>Connexion Firebase requise</strong>
+      <span id="firebase-error-text">Vérifiez les règles de votre Realtime Database.</span>
+    </div>
+
+    <!-- Tutoriel d'installation PWA -->
+    <section id="view-install-tuto" class="onboarding-wrap hidden">
+      <div class="onboarding-logo">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M12 64 C12 31, 88 31, 88 64 C84 39, 16 39, 12 64 Z" fill="#111827"/>
+          <circle cx="50" cy="57" r="6.5" fill="#111827"/>
+        </svg>
+        <h1>Bienvenue sur Cadenza</h1>
+        <p>Installez l'application sur votre écran d'accueil pour l'utiliser en plein écran et recevoir les notifications de l'ensemble.</p>
+      </div>
+
+      <div id="tuto-direct-install-card" class="card featured hidden">
+        <div class="card-kicker">Installation rapide</div>
+        <p style="margin: 4px 0 12px; font-size: 14px;">Votre appareil permet l'installation directe de Cadenza en un clic.</p>
+        <button type="button" id="btn-tuto-direct-install" class="btn-primary btn-full">Installer Cadenza maintenant</button>
+      </div>
+
+      <div id="tuto-ios-card" class="card">
+        <div class="card-kicker">Sur iPhone &amp; iPad (Safari)</div>
+        <div class="tuto-step">
+          <span class="tuto-num">1</span>
+          <div>Ouvrez cette page dans <strong>Safari</strong> puis appuyez sur <strong>Partager</strong>
+            <span class="tuto-icon-inline" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+            </span>.
+          </div>
+        </div>
+        <div class="tuto-step"><span class="tuto-num">2</span><div>Appuyez sur <strong>Sur l'écran d'accueil</strong>.</div></div>
+        <div class="tuto-step"><span class="tuto-num">3</span><div>Appuyez sur <strong>Ajouter</strong> puis lancez <strong>Cadenza</strong> depuis votre écran d'accueil.</div></div>
+      </div>
+
+      <div id="tuto-android-card" class="card">
+        <div class="card-kicker">Sur Android (Chrome) &amp; Ordinateur</div>
+        <div class="tuto-step"><span class="tuto-num">1</span><div>Ouvrez le menu <strong>⋮</strong> de Chrome (ou l'icône d'installation dans la barre d'adresse).</div></div>
+        <div class="tuto-step"><span class="tuto-num">2</span><div>Sélectionnez <strong>Ajouter à l'écran d'accueil</strong> ou <strong>Installer l'application</strong>.</div></div>
+        <div class="tuto-step"><span class="tuto-num">3</span><div>Confirmez en appuyant sur <strong>Installer</strong>.</div></div>
+      </div>
+
+      <div style="margin-top: 18px;">
+        <button type="button" id="btn-finish-tuto" class="btn-primary btn-full">Continuer vers Cadenza</button>
+      </div>
+    </section>
+
+    <!-- Onboarding : Rejoindre ou créer un ensemble -->
+    <section id="view-onboarding" class="onboarding-wrap hidden">
+      <div class="onboarding-logo">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M12 64 C12 31, 88 31, 88 64 C84 39, 16 39, 12 64 Z" fill="#111827"/>
+          <circle cx="50" cy="57" r="6.5" fill="#111827"/>
+        </svg>
+        <h1>Cadenza</h1>
+        <p>Disponibilités, répétitions, cours et concerts centralisés pour ensembles musicaux.</p>
+      </div>
+
+      <div id="join-card" class="card">
+        <div class="card-kicker" id="join-kicker">Rejoindre un ensemble</div>
+        <h2 class="modal-title" id="join-ensemble-title" style="margin-bottom: 12px;">Accéder à un espace existant</h2>
+        <div class="field" id="join-code-field">
+          <label for="join-code">Code ou lien de l'ensemble</label>
+          <input type="text" id="join-code" placeholder="Ex: ens-a1b2c3" required />
+        </div>
+        <div id="join-existing-members-box" class="hidden" style="margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+          <div class="card-kicker" style="margin-bottom: 6px;">Déjà membre ? Récupérer mon profil</div>
+          <p style="font-size: 13px; color: var(--muted); margin: 0 0 10px;">Touchez votre nom pour retrouver vos disponibilités sur cet appareil :</p>
+          <div id="join-existing-members-list" style="display: grid; gap: 6px;"></div>
+        </div>
+        <form id="form-join">
+          <div class="card-kicker" id="join-new-member-kicker" style="margin-bottom: 8px;">Nouveau musicien</div>
+          <div class="row-2">
+            <div class="field"><label for="join-name">Votre prénom</label><input type="text" id="join-name" placeholder="Ex: Clara" required /></div>
+            <div class="field"><label for="join-instrument">Instrument</label><input type="text" id="join-instrument" placeholder="Ex: Violon I" required /></div>
+          </div>
+          <button type="submit" id="btn-submit-join" class="btn-primary btn-full">Rejoindre l'ensemble</button>
+        </form>
+      </div>
+
+      <div id="onboarding-divider" class="divider">ou</div>
+
+      <div id="create-card" class="card">
+        <div class="card-kicker">Nouvel espace</div>
+        <h2 class="modal-title" style="margin-bottom: 12px;">Créer un ensemble</h2>
+        <form id="form-create">
+          <div class="field"><label for="create-ensemble-name">Nom de l'ensemble</label><input type="text" id="create-ensemble-name" placeholder="Ex: Quatuor Lumière" required /></div>
+          <div class="field">
+            <label for="create-formation">Formation</label>
+            <select id="create-formation">
+              <option>Duo</option><option>Trio</option><option selected>Quatuor</option>
+              <option>Quintette</option><option>Sextuor / Octuor</option><option>Ensemble de chambre</option>
+            </select>
+          </div>
+          <div class="row-2">
+            <div class="field"><label for="create-member-name">Votre prénom</label><input type="text" id="create-member-name" placeholder="Ex: Colin" required /></div>
+            <div class="field"><label for="create-member-instrument">Instrument</label><input type="text" id="create-member-instrument" placeholder="Ex: Violoncelle" required /></div>
+          </div>
+          <button type="submit" id="btn-submit-create" class="btn-secondary btn-full">Créer et inviter les membres</button>
+        </form>
+      </div>
+    </section>
+
+    <div id="install-banner" class="banner-install hidden">
+      <span id="install-text">Installer Cadenza sur votre appareil pour recevoir les alertes.</span>
+      <button type="button" id="btn-install-pwa" class="btn-primary btn-sm">Installer</button>
+    </div>
+
+    <!-- VUE 1 : AGENDA -->
+    <section id="view-agenda" class="hidden">
+      <div class="section-head">
+        <h2 class="section-title">Agenda de l'ensemble</h2>
+        <button type="button" id="btn-open-rehearsal" class="btn-primary btn-sm">+ Événement</button>
+      </div>
+      <div id="agenda-list"></div>
+    </section>
+
+    <!-- VUE 2 : DISPONIBILITÉS -->
+    <section id="view-avail" class="hidden">
+      <div class="section-head">
+        <h2 class="section-title">Disponibilités</h2>
+        <button type="button" id="btn-open-poll" class="btn-primary btn-sm">+ Proposer des dates</button>
+      </div>
+      <div id="avail-toolbar" class="avail-toolbar hidden">
+        <div class="segmented-control" role="tablist">
+          <button type="button" class="seg-btn active" data-avail-view="cards">Cartes</button>
+          <button type="button" class="seg-btn" data-avail-view="express">Express</button>
+          <button type="button" class="seg-btn" data-avail-view="table">Tableau</button>
+        </div>
+        <div class="filter-pills" role="group">
+          <button type="button" class="filter-pill active" data-avail-filter="all">Actives</button>
+          <button type="button" class="filter-pill" data-avail-filter="unvoted" id="pill-filter-unvoted">À voter</button>
+          <button type="button" class="filter-pill" data-avail-filter="consensus">Unanimité</button>
+          <button type="button" class="filter-pill" data-avail-filter="archived" id="pill-filter-archived">Archives</button>
+        </div>
+      </div>
+      <div id="polls-list"></div>
+    </section>
+
+    <!-- VUE 3 : ENSEMBLE -->
+    <section id="view-ensemble" class="hidden">
+      <div class="section-head">
+        <h2 class="section-title">Ensemble</h2>
+        <button type="button" id="btn-open-edit-ensemble" class="btn-secondary btn-sm">Modifier l'ensemble</button>
+      </div>
+
+      <div class="card featured">
+        <div class="card-kicker" id="info-formation">Formation</div>
+        <h3 class="card-date" id="info-name" style="font-size: 22px;">—</h3>
+        <div class="card-meta">Code d'invitation : <strong id="info-code">—</strong></div>
+        <div class="card-actions" style="border-top: none; padding-top: 0;">
+          <button type="button" id="btn-share-invite" class="btn-primary btn-full">Envoyer le lien d'invitation</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-kicker">Musiciens (<span id="members-count">0</span>)</div>
+        <div id="members-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-kicker">Mes indisponibilités déclarées</div>
+        <p style="font-size: 13.5px; color: var(--muted); margin: 6px 0 12px;">Signalez vos périodes d'absence (vacances, examens, tournée). Elles seront affichées lors de la proposition de dates.</p>
+        <div id="my-unavailabilities-list"></div>
+        <button type="button" id="btn-open-unavail" class="btn-secondary btn-sm btn-full" style="margin-top: 8px;">+ Déclarer une période d'absence</button>
+      </div>
+
+      <div class="card">
+        <div class="card-kicker">Notifications push (cet ensemble)</div>
+        <p style="font-size: 13.5px; color: var(--muted); margin: 6px 0 12px;">Activez ou coupez les alertes sur votre téléphone pour cet ensemble.</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" id="btn-toggle-push" class="btn-primary btn-sm">Activer les notifications</button>
+          <button type="button" id="btn-test-push" class="btn-secondary btn-sm">Tester une alerte</button>
+        </div>
+        <div id="push-status-msg" style="font-size: 12px; color: var(--muted); margin-top: 8px;"></div>
+        <label class="toggle-row" for="toggle-auto-remind-eve">
+          <input type="checkbox" id="toggle-auto-remind-eve" checked />
+          <span>Rappel automatique la veille des répétitions, cours et concerts à 19h00</span>
+        </label>
+      </div>
+
+      <div class="card">
+        <div class="card-kicker">Mon profil &amp; Mes ensembles</div>
+        <div id="saved-ensembles-list" style="margin: 8px 0 12px;"></div>
+        <div style="display: grid; gap: 8px;">
+          <button type="button" id="btn-open-transfer" class="btn-secondary btn-sm btn-full">Sauvegarder / Transférer sur un autre appareil</button>
+          <button type="button" id="btn-switch-onboarding" class="btn-secondary btn-sm btn-full">Créer ou rejoindre un autre ensemble</button>
+          <button type="button" id="btn-reopen-tuto" class="btn-secondary btn-sm btn-full">Guide d'installation sur l'écran d'accueil</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-kicker">Aide et contact</div>
+        <p style="font-size: 13.5px; color: var(--muted); margin: 6px 0 12px;">Une question, un problème technique ou une suggestion ?</p>
+        <a href="mailto:contact@cadenzaapp.ch?subject=Cadenza%20%E2%80%94%20Demande%20d'aide" class="btn btn-secondary btn-sm btn-full">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span>contact@cadenzaapp.ch</span>
+        </a>
+      </div>
+
+      <div class="app-version-footer">Cadenza • Version <span id="app-version-label">—</span></div>
+    </section>
+  </main>
+
+  <!-- Barre de navigation -->
+  <nav id="app-nav" class="tab-bar hidden" aria-label="Navigation principale">
+    <button type="button" class="tab-item active" data-tab="agenda">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Agenda</span>
+    </button>
+    <button type="button" class="tab-item" data-tab="avail">
+      <span id="nav-avail-badge" class="tab-badge hidden">0</span>
+      <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Disponibilités</span>
+    </button>
+    <button type="button" class="tab-item" data-tab="ensemble">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Ensemble</span>
+    </button>
+  </nav>
+
+  <!-- MODALES -->
+  <div id="modal-poll-actions" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title" id="poll-actions-title">Options du créneau</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-poll-actions">Fermer</button></div>
+      <div id="poll-actions-subtitle" class="card-meta" style="margin-bottom: 14px; font-weight: 600; color: var(--fg);">—</div>
+      <div id="poll-actions-list" class="action-sheet-list"></div>
+    </div>
+  </div>
+
+  <div id="modal-admin-pin" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Administration Cadenza</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-admin-pin">Fermer</button></div>
+      <p style="font-size: 13.5px; color: var(--muted); margin: 0 0 14px;">Saisissez votre code secret à 4 chiffres pour accéder au portail d'administration.</p>
+      <form id="form-admin-pin">
+        <div class="field"><label for="admin-pin-input">Code secret (4 chiffres)</label><input type="password" id="admin-pin-input" class="pin-input" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="••••" autocomplete="off" required /></div>
+        <div id="admin-pin-error" class="unavail-notice hidden" style="margin-bottom: 12px;">Code secret incorrect.</div>
+        <button type="submit" id="btn-submit-admin-pin" class="btn-primary btn-full">Déverrouiller le portail</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Portail d'Administration enrichi : Diffusion Pop-up + Résultats & Retours -->
+  <div id="modal-admin-portal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Portail d'administration</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-admin-portal">Fermer</button></div>
+
+      <div class="admin-nav-tabs" role="tablist">
+        <button type="button" class="admin-nav-tab active" data-admin-tab="publish">Diffuser une pop-up</button>
+        <button type="button" class="admin-nav-tab" data-admin-tab="results">Résultats &amp; Retours <span id="admin-results-badge" class="admin-count-pill hidden">0</span></button>
+      </div>
+
+      <div id="admin-firebase-warning" class="alert-box hidden"><strong>Accès refusé par Firebase</strong><span>Vérifiez <code>admin_config/secret_pin</code> dans Firebase.</span></div>
+
+      <!-- ONGLET 1 : DIFFUSER UNE POP-UP -->
+      <div id="admin-panel-publish">
+        <div class="card" style="padding: 12px 14px; margin-bottom: 16px;">
+          <div class="card-kicker">Pop-up actuellement active</div>
+          <div id="admin-current-announcement" style="font-size: 13.5px; color: var(--muted); margin-top: 4px;">Aucune pop-up publiée.</div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+            <button type="button" id="btn-admin-retest-popup" class="btn-secondary btn-xs hidden">Revoir la pop-up</button>
+            <button type="button" id="btn-admin-clear-announcement" class="btn-del-subtle btn-xs hidden">Désactiver</button>
+          </div>
+        </div>
+
+        <form id="form-admin-announcement" novalidate>
+          <div class="field" style="margin-bottom: 10px;">
+            <label>Type de fenêtre pop-up</label>
+            <div class="admin-type-grid" id="admin-popup-type-grid">
+              <button type="button" class="admin-type-btn active" data-popup-type="poll">
+                <span class="atype-title">📊 Sondage (Vote)</span>
+                <span class="atype-sub">Choix personnalisés</span>
+              </button>
+              <button type="button" class="admin-type-btn" data-popup-type="feedback">
+                <span class="atype-title">💬 Demande d'avis</span>
+                <span class="atype-sub">Retour écrit libre</span>
+              </button>
+              <button type="button" class="admin-type-btn" data-popup-type="message">
+                <span class="atype-title">📢 Message libre</span>
+                <span class="atype-sub">Annonce personnalisée</span>
+              </button>
+              <button type="button" class="admin-type-btn" data-popup-type="update">
+                <span class="atype-title">✨ Mise à jour</span>
+                <span class="atype-sub">Liste de nouveautés</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="field"><label for="admin-ann-version">Badge / Étiquette</label><input type="text" id="admin-ann-version" placeholder="Ex: Sondage, v20.2..." required /></div>
+            <div class="field"><label for="admin-ann-title">Titre de la fenêtre</label><input type="text" id="admin-ann-title" value="Votre avis sur Cadenza" required /></div>
+          </div>
+          <div class="field"><label for="admin-ann-subtitle" id="lbl-admin-subtitle">Question ou sous-titre</label><input type="text" id="admin-ann-subtitle" placeholder="Ex: Quelle fonctionnalité souhaitez-vous en priorité ?" /></div>
+
+          <!-- Champs : Sondage personnalisé -->
+          <div id="admin-fields-poll">
+            <div class="field">
+              <label>Choix de vote personnalisés</label>
+              <div id="admin-poll-options-list"></div>
+              <button type="button" id="btn-admin-add-option" class="btn-secondary btn-xs btn-full" style="margin-top: 4px;">+ Ajouter un choix de vote</button>
+            </div>
+            <label class="toggle-row" for="admin-poll-allow-comment" style="margin-top: 0; margin-bottom: 14px; padding-top: 8px;">
+              <input type="checkbox" id="admin-poll-allow-comment" checked />
+              <span>Permettre aux utilisateurs d'ajouter un commentaire écrit facultatif</span>
+            </label>
+          </div>
+
+          <!-- Champs : Demande de retour écrit -->
+          <div id="admin-fields-feedback" class="hidden">
+            <div class="field">
+              <label for="admin-feedback-placeholder">Indication dans le champ de réponse</label>
+              <input type="text" id="admin-feedback-placeholder" value="Écrivez votre retour, idée ou remarque ici..." />
+            </div>
+          </div>
+
+          <!-- Champs : Message libre personnalisé -->
+          <div id="admin-fields-message" class="hidden">
+            <div class="field">
+              <label for="admin-message-body">Contenu de votre message</label>
+              <textarea id="admin-message-body" rows="4" placeholder="Écrivez librement le texte que vous souhaitez afficher aux utilisateurs..."></textarea>
+            </div>
+            <div class="field">
+              <label for="admin-message-cta">Texte du bouton de fermeture</label>
+              <input type="text" id="admin-message-cta" value="J'ai compris, fermer" />
+            </div>
+          </div>
+
+          <!-- Champs : Annonce de mise à jour -->
+          <div id="admin-fields-update" class="hidden">
+            <div class="field"><label for="admin-ann-notes">Nouveautés (une par ligne)</label><textarea id="admin-ann-notes" rows="4" placeholder="Nouveau calendrier multi-dates&#10;Gestion des concerts et cours"></textarea></div>
+          </div>
+
+          <div style="display: grid; gap: 8px;">
+            <button type="button" id="btn-admin-preview" class="btn-secondary btn-full">Prévisualiser la pop-up</button>
+            <button type="submit" id="btn-admin-publish" class="btn-confirm btn-full">Publier pour tous les utilisateurs</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ONGLET 2 : RÉSULTATS DES SONDAGES & RETOURS UTILISATEURS -->
+      <div id="admin-panel-results" class="hidden">
+        <div id="admin-feedback-rules-warning" class="alert-box hidden">
+          <strong>Autorisation Firebase requise pour les retours</strong>
+          <span>Ajoutez la règle suivante dans Firebase Realtime Database pour recevoir et lire les votes/retours :</span>
+          <div class="code-snippet-box" id="firebase-feedback-rule-snippet">"app_feedback": {
+  ".read": true,
+  ".write": true
+}</div>
+          <button type="button" id="btn-copy-fb-rule" class="btn-secondary btn-xs" style="margin-top: 8px;">Copier la règle</button>
+        </div>
+
+        <div id="admin-results-empty" class="empty-state" style="padding: 24px 14px;">
+          <p style="margin-bottom: 6px;">Aucun sondage ni retour utilisateur enregistré pour le moment.</p>
+          <span style="font-size: 12.5px;">Publiez un sondage ou une demande d'avis pour voir les réponses s'afficher ici en direct.</span>
+        </div>
+
+        <div id="admin-results-content" class="hidden">
+          <div class="field">
+            <label for="admin-results-campaign-select">Sondage ou campagne de retour</label>
+            <select id="admin-results-campaign-select"></select>
+          </div>
+
+          <div class="card" style="padding: 13px 14px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+              <div>
+                <span class="whats-new-badge" id="res-campaign-badge" style="margin-bottom: 4px;">Sondage</span>
+                <div style="font-weight: 700; font-size: 15px;" id="res-campaign-title">—</div>
+                <div style="font-size: 13px; color: var(--muted);" id="res-campaign-subtitle">—</div>
+              </div>
+              <span class="consensus-badge full" id="res-total-count">0 réponse</span>
+            </div>
+
+            <div id="res-poll-bars-container" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--subtle);"></div>
+          </div>
+
+          <div class="card" style="padding: 13px 14px;">
+            <div class="card-kicker" style="margin-bottom: 8px;">Commentaires &amp; Retours écrits (<span id="res-comments-count">0</span>)</div>
+            <div id="res-comments-list"></div>
+          </div>
+
+          <button type="button" id="btn-admin-delete-campaign-results" class="btn-del-subtle btn-xs btn-full">Supprimer les résultats de cette campagne</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Universelle Pop-up Utilisateur (Mise à jour, Sondage, Avis, Message libre) -->
+  <div id="modal-whats-new" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title" id="whats-new-title">Nouveautés sur Cadenza</h3><button type="button" class="btn-secondary btn-sm" id="btn-close-whats-new-top">Fermer</button></div>
+      <div class="whats-new-hero">
+        <span class="whats-new-badge" id="whats-new-version-badge">Mise à jour</span>
+        <div id="whats-new-subtitle" style="font-size: 14.5px; font-weight: 600; color: var(--fg);">Découvrez les dernières améliorations :</div>
+        <div id="whats-new-date" style="font-size: 12px; color: var(--muted); margin-top: 3px;"></div>
+      </div>
+      <div id="whats-new-dynamic-body"></div>
+      <div id="whats-new-footer-actions" style="display: grid; gap: 8px;"></div>
+    </div>
+  </div>
+
+  <div id="modal-confirm-delete" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title" id="confirm-delete-title">Confirmer</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-confirm-delete">Fermer</button></div>
+      <div id="confirm-delete-context" class="unavail-notice" style="margin-bottom: 12px; font-weight: 600;">—</div>
+      <p id="confirm-delete-message" style="font-size: 14px; color: var(--muted); margin: 0 0 18px;">Voulez-vous continuer ?</p>
+      <div class="row-2">
+        <button type="button" class="btn-secondary btn-full" data-close="modal-confirm-delete">Annuler</button>
+        <button type="button" id="btn-execute-delete" class="btn-danger btn-full">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Validation de sondage vers Agenda -->
+  <div id="modal-confirm-poll" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Valider dans l'agenda</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-confirm-poll">Fermer</button></div>
+      <div id="confirm-poll-summary" class="card-meta" style="margin-bottom: 14px; font-weight: 600; color: var(--fg);">—</div>
+      <form id="form-confirm-poll">
+        <input type="hidden" id="confirm-poll-id" />
+        <div id="confirm-poll-type-holder"></div>
+        <div class="row-2">
+          <div class="field"><label for="confirm-poll-start" id="lbl-confirm-poll-start">Début</label><input type="time" id="confirm-poll-start" required /></div>
+          <div class="field"><label for="confirm-poll-end" id="lbl-confirm-poll-end">Fin</label><input type="time" id="confirm-poll-end" required /></div>
+        </div>
+        <div id="confirm-poll-concert-fields"></div>
+        <div class="field"><label for="confirm-poll-location">Lieu</label><input type="text" id="confirm-poll-location" placeholder="Ex: Sion, Lausanne, Salle 103" required /></div>
+        <div class="field"><label for="confirm-poll-program">Programme (optionnel)</label><input type="text" id="confirm-poll-program" placeholder="Ex: Lecture du 2e mouvement" /></div>
+        <button type="submit" class="btn-confirm btn-full">Ajouter à l'agenda centralisé</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Édition de créneau proposé -->
+  <div id="modal-edit-poll" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Modifier ce créneau</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-edit-poll">Fermer</button></div>
+      <form id="form-edit-poll" novalidate>
+        <input type="hidden" id="edit-poll-id" />
+        <div id="edit-poll-type-holder"></div>
+        <div class="field"><label for="edit-poll-date">Date</label><input type="date" id="edit-poll-date" required /></div>
+        <div id="edit-poll-mode-holder"></div>
+        <div id="edit-poll-archive-warning" class="alert-box hidden"></div>
+        <div class="field"><label for="edit-poll-location">Lieu envisagé (optionnel)</label><input type="text" id="edit-poll-location" placeholder="Ex: Sion, Lausanne, Salle 103" /></div>
+        <div class="field"><label for="edit-poll-note">Programme / Détails (optionnel)</label><input type="text" id="edit-poll-note" placeholder="Ex: Lecture du 2e mouvement, Concert de printemps..." /></div>
+        <p style="font-size: 12.5px; color: var(--muted); margin: 0 0 14px;">Si vous modifiez la date ou l'horaire, les votes existants seront réinitialisés.</p>
+        <button type="submit" id="btn-submit-edit-poll" class="btn-primary btn-full">Enregistrer les modifications</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-unavailability" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Déclarer une indisponibilité</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-unavailability">Fermer</button></div>
+      <form id="form-unavailability">
+        <div class="row-2">
+          <div class="field"><label for="unavail-start">Du</label><input type="date" id="unavail-start" required /></div>
+          <div class="field"><label for="unavail-end">Au (inclus)</label><input type="date" id="unavail-end" required /></div>
+        </div>
+        <div class="field"><label for="unavail-reason">Motif (optionnel)</label><input type="text" id="unavail-reason" maxlength="60" placeholder="Ex: Vacances, Examens, Tournée" /></div>
+        <button type="submit" class="btn-primary btn-full">Enregistrer cette période</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-edit-ensemble" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Modifier l'ensemble</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-edit-ensemble">Fermer</button></div>
+      <form id="form-edit-ensemble">
+        <div class="field"><label for="edit-ensemble-name">Nom de l'ensemble</label><input type="text" id="edit-ensemble-name" required /></div>
+        <div class="field">
+          <label for="edit-ensemble-formation">Formation</label>
+          <select id="edit-ensemble-formation">
+            <option>Duo</option><option>Trio</option><option>Quatuor</option>
+            <option>Quintette</option><option>Sextuor / Octuor</option><option>Ensemble de chambre</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary btn-full">Enregistrer les modifications</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-edit-member" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Modifier le musicien</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-edit-member">Fermer</button></div>
+      <form id="form-edit-member">
+        <input type="hidden" id="edit-member-id" />
+        <div class="field"><label for="edit-member-name">Prénom / Nom</label><input type="text" id="edit-member-name" required /></div>
+        <div class="field"><label for="edit-member-instrument">Instrument</label><input type="text" id="edit-member-instrument" required /></div>
+        <button type="submit" class="btn-primary btn-full">Enregistrer</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Édition d'événement Agenda -->
+  <div id="modal-edit-rehearsal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title" id="modal-edit-reh-title">Modifier l'événement</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-edit-rehearsal">Fermer</button></div>
+      <form id="form-edit-rehearsal">
+        <input type="hidden" id="edit-reh-id" />
+        <div id="edit-reh-type-holder"></div>
+        <div class="field"><label for="edit-reh-date">Date</label><input type="date" id="edit-reh-date" required /></div>
+        <div class="row-2">
+          <div class="field"><label for="edit-reh-start" id="lbl-edit-reh-start">Début</label><input type="time" id="edit-reh-start" required /></div>
+          <div class="field"><label for="edit-reh-end" id="lbl-edit-reh-end">Fin</label><input type="time" id="edit-reh-end" required /></div>
+        </div>
+        <div id="edit-reh-concert-fields"></div>
+        <div class="field"><label for="edit-reh-location">Lieu</label><input type="text" id="edit-reh-location" required /></div>
+        <div class="field"><label for="edit-reh-program">Programme</label><input type="text" id="edit-reh-program" /></div>
+        <div class="field"><label for="edit-reh-notes">Notes (optionnel)</label><textarea id="edit-reh-notes" rows="2"></textarea></div>
+        <button type="submit" class="btn-primary btn-full">Enregistrer les modifications</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-invite" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Inviter les musiciens</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-invite">Fermer</button></div>
+      <p style="font-size: 13.5px; color: var(--muted); margin: 0 0 12px;">Envoyez ce lien direct aux membres de votre ensemble. Aucun compte requis.</p>
+      <div class="invite-url-box" id="invite-link-display">—</div>
+      <div style="display: grid; gap: 8px;">
+        <button type="button" id="btn-copy-invite" class="btn-primary btn-full">Copier le lien d'invitation</button>
+        <button type="button" id="btn-native-share" class="btn-secondary btn-full">Partager via WhatsApp / SMS / Mail</button>
+      </div>
+      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--subtle); font-size: 12.5px; color: var(--muted);">
+        Code direct : <strong id="invite-code-display" style="color: var(--fg);">—</strong>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-transfer-device" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title">Transférer mon profil</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-transfer-device">Fermer</button></div>
+      <p style="font-size: 13.5px; color: var(--muted); margin: 0 0 12px;">Ouvrez ce lien personnel sur votre nouvel appareil pour restaurer instantanément votre profil :</p>
+      <div class="invite-url-box" id="transfer-link-display">—</div>
+      <div style="display: grid; gap: 8px;">
+        <button type="button" id="btn-copy-transfer" class="btn-primary btn-full">Copier mon lien personnel</button>
+        <button type="button" id="btn-share-transfer" class="btn-secondary btn-full">Envoyer vers mon autre appareil</button>
+      </div>
+      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--subtle); font-size: 12.5px; color: var(--muted);">
+        Ou saisissez le code <strong id="transfer-code-display" style="color: var(--fg);">—</strong> sur l'écran d'accueil.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Proposition de dates (Multi-Sélection Calendrier + Mode Précision) -->
+  <div id="modal-poll" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title" id="modal-poll-title">Proposer des dates</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-poll">Fermer</button></div>
+      <div id="poll-refine-banner" class="info-banner-box hidden"></div>
+      <form id="form-poll" novalidate>
+        <div id="poll-type-holder"></div>
+
+        <!-- Mode Multi-Dates Tap-Tap-Tap (Calendrier) -->
+        <div id="poll-calendar-wrapper">
+          <div class="multi-cal-box">
+            <div class="multi-cal-header">
+              <button type="button" id="btn-cal-prev" class="btn-secondary btn-xs" aria-label="Mois précédent">←</button>
+              <span id="cal-month-label" class="multi-cal-month">—</span>
+              <button type="button" id="btn-cal-next" class="btn-secondary btn-xs" aria-label="Mois suivant">→</button>
+            </div>
+            <div class="multi-cal-weekdays"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+            <div id="multi-cal-grid" class="multi-cal-grid"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:11.5px;color:var(--muted);">
+              <span>Touchez plusieurs jours pour les sélectionner</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;color:var(--no-fg);"><span class="cal-day-dot"></span> Absence signalée</span>
+            </div>
+            <div id="cal-selected-pills" class="selected-dates-pills"></div>
+          </div>
+          <div id="poll-global-mode-holder" class="poll-slot-row"></div>
+        </div>
+
+        <!-- Mode Multi-Horaires (pour préciser une journée) -->
+        <div id="poll-slots-wrapper" class="hidden">
+          <div id="poll-slots-container"></div>
+          <div style="margin-bottom: 16px;"><button type="button" id="btn-add-poll-slot" class="btn-secondary btn-sm btn-full">+ Ajouter un autre horaire ce jour</button></div>
+        </div>
+
+        <div id="poll-archive-lock-warning" class="alert-box hidden"></div>
+        <div id="poll-unavail-warning" class="alert-box hidden"></div>
+        <div class="field">
+          <label for="poll-location">Lieu envisagé / suggéré (optionnel)</label>
+          <input type="text" id="poll-location" placeholder="Ex: Sion, Lausanne, Salle 103" />
+          <div id="poll-location-suggestions" class="location-suggestions-row hidden"></div>
+        </div>
+        <div class="field"><label for="poll-note">Programme / Infos concert (optionnel)</label><input type="text" id="poll-note" placeholder="Ex: Lecture du 2e mouvement, Concert de printemps..." /></div>
+        <div id="poll-replace-row" class="hidden" style="margin-bottom: 14px;">
+          <label class="toggle-row" for="poll-replace-checkbox" style="margin-top: 0;">
+            <input type="checkbox" id="poll-replace-checkbox" checked />
+            <span id="poll-replace-label">Remplacer la proposition générale par ces créneaux horaires</span>
+          </label>
+        </div>
+        <button type="submit" id="btn-submit-poll" class="btn-primary btn-full">Soumettre les dates aux membres</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Planification directe dans l'Agenda -->
+  <div id="modal-rehearsal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header"><h3 class="modal-title" id="modal-reh-title">Planifier un événement</h3><button type="button" class="btn-secondary btn-sm" data-close="modal-rehearsal">Fermer</button></div>
+      <form id="form-rehearsal">
+        <div id="reh-type-holder"></div>
+        <div class="field"><label for="reh-date">Date</label><input type="date" id="reh-date" required /></div>
+        <div class="row-2">
+          <div class="field"><label for="reh-start" id="lbl-reh-start">Début</label><input type="time" id="reh-start" value="14:00" required /></div>
+          <div class="field"><label for="reh-end" id="lbl-reh-end">Fin</label><input type="time" id="reh-end" value="17:00" required /></div>
+        </div>
+        <div id="reh-concert-fields"></div>
+        <div class="field"><label for="reh-location">Lieu</label><input type="text" id="reh-location" placeholder="Ex: Sion, Temple de Lutry, Salle 103..." required /></div>
+        <div class="field"><label for="reh-program">Programme</label><input type="text" id="reh-program" placeholder="Ex: Beethoven Op. 18 n°4 — Allegro" /></div>
+        <div class="field"><label for="reh-notes">Notes complémentaires (optionnel)</label><textarea id="reh-notes" rows="2"></textarea></div>
+        <button type="submit" class="btn-primary btn-full">Enregistrer dans l'agenda</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
